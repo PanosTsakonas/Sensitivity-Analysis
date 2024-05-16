@@ -9,7 +9,7 @@ library(splines)
 
 theq<-20*pi/180
 
-data <-as.matrix(read_csv("C:/Users/u1857308/OneDrive - University of Warwick/PhD/MATLAB Code/Spline Fit Mathematica data/P2/Cylindrical_repeat4_USE_THIS/data_digit_2_par_2.csv"))
+data <-as.matrix(read_csv("Data.csv"))
 yedc<-data[,1]
 yfds<-data[,2]
 yfdp<-data[,3]
@@ -27,8 +27,6 @@ edcDIP<-splinefun(tim,data[,7])
 fdpDIP<-splinefun(tim,data[,8])
 
 i1<- 1.91983E-05
-i2<-3.30139E-06
-i3<-6.51525E-07
 
 
 
