@@ -46,7 +46,7 @@ mymodel2 <- function(t, State, Pars) {
   with(as.list(c(State, Pars)), {
     
     dth1<- th2
-    dth2<- (c_EDC*edcPIP(t)+c_FDS*fdpPIP(t)+c_FDP*fdsPIP(t)-K*(th1-theq)+B*th2)/I
+    dth2<- (c_EDC*edcPIP(t)+c_FDS*fdpPIP(t)+c_FDP*fdsPIP(t)-K*(th1-theq)-B*th2)/I
     
     
     
