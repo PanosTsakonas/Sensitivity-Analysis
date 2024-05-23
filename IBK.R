@@ -7,9 +7,9 @@ library(cowplot)
 library(readr)
 library(splines)
 
-theq<-20*pi/180
 
-data <-as.matrix(read_csv("Data.csv"))
+
+data <-as.matrix(read_csv("C:/Users/.......Read the Data.csv"))
 yedc<-data[,1]
 yfds<-data[,2]
 yfdp<-data[,3]
@@ -25,9 +25,9 @@ fdpPIP<-splinefun(tim,data[,5])
 fdsPIP<-splinefun(tim,data[,6])
 edcDIP<-splinefun(tim,data[,7])
 fdpDIP<-splinefun(tim,data[,8])
+theq<-thf[length(thf)]
 
-i1<- 1.91983E-05
-
+il<-1.2E-5
 
 
 mymodel1 <- function(t, State, Pars) {
@@ -46,7 +46,7 @@ mymodel2 <- function(t, State, Pars) {
   with(as.list(c(State, Pars)), {
     
     dth1<- th2
-    dth2<- (c_EDC*edcPIP(t)+c_FDS*fdpPIP(t)+c_FDP*fdsPIP(t)-K*(th1-theq)-B*th2)/I
+    dth2<- (c_EDC*edcPIP(t)+c_FDS*fdpPIP(t)+c_FDP*fdsPIP(t)-K*(th1-theq)+B*th2)/I
     
     
     
@@ -58,7 +58,7 @@ mymodel3 <- function(t, State, Pars) {
   with(as.list(c(State, Pars)), {
     
     dth1<- th2
-    dth2<- (c_EDC*edcDIP(t)+c_FDS*fdpDIP(t)-K*(th1-theq)+B*th2)/I
+    dth2<- (c_EDC*edcDIP(t)+c_FDS*fdpDIP(t)-K*(th1-theq)-B*th2)/I
     
     
     
@@ -70,22 +70,15 @@ mymodel3 <- function(t, State, Pars) {
 # The parameters to be included in the sensitivity analysis and their lower
 # and upper boundaries:
 modelpars  <- c("K", "B","I","c_EDC","c_FDP","c_FDS")
-modelparsD  <- c("K", "B","I","c_EDC","c_FDP")
-modellwM <- c(0,0,i1-i1*2/100,0.1,0.1,0.1 )
-modelupM <- c(10,2,i1+i1*2/100,2,2,2)
-modellwP <- c(0,0,i2-i2*2/100,0.1,0.1,0.1 )
-modelupP <- c(10,2,i2+i2*2/100,2,2,2)
-modellwD <- c(0,0,i3-i3*2/100,0.1,0.1 )
-modelupD <- c(10,2,i3+i3*2/100,2,2)
+modellwM <- c(0.1,0.1,il-0.05*i1,0.1,0.1,0.1 )
+modelupM <- c(10,2,il+0.05*il,2,2,2)
+
 # The initial values of the state variables:
 modelinit  <- c(th1=thf[1],
                 th2=0)
-modelinitP  <- c(th1=thP[1],
-                th2=0)
-modelinitD  <- c(th1=thD[1],
-                th2=0)
+
 # The timepoints of interest:
-modeltimes <- seq(tim[1],tim[30],by=0.01)
+modeltimes <- seq(tim[1],tim[30],by=0.1)
 
 
 set.seed(3)
@@ -118,30 +111,56 @@ plot1<-ggplot(data = Th1)+geom_line(aes(x=time,y=K,colour="K"),size=2)+
   geom_line(aes(x=time,y=c_FDP,colour="c_FDP"),size=2)+geom_line(aes(x=time,y=c_FDS,colour="c_FDS"),size=2)+ggtitle("Sensitivity Analysis")+labs(x="Time (s)", y="Total Order Sobol Indices", colour="Legend")+
   theme_pubr()+theme(plot.title = element_text(hjust = 0.5))
 
-ggsave("Sensitivity Chapter8.png",dpi=600,path="C:/Users/u1857308/OneDrive - University of Warwick/PhD/Sensitivity Analysis/Linda R/")
+ggsave("Sensitivity.png",dpi=600)
 
 
 tTh1<-colMeans(Th1)[-1]
 if (tTh1[5]<1E-1)
 {
-  tTh1[5]=1E-2
+  tTh1[5]=3E-2
 }
 if (tTh1[6]<1E-1)
 {
-  tTh1[6]=1E-2
+  tTh1[6]=3E-2
 }
 if (tTh1[4]<1E-1)
 {
-  tTh1[4]=1E-2
+  tTh1[4]=3E-2
 }
+
+th1_f<-as.data.frame(t(mymodel3_sobol$th1$S))
+F_Sobol<-colMeans(th1_f)[-1]
+
+if (F_Sobol[5]<1E-1)
+{
+  F_Sobol[5]=1E-2
+}
+if (F_Sobol[6]<1E-1)
+{
+  F_Sobol[6]=1E-2
+}
+if (F_Sobol[4]<1E-1)
+{
+  F_Sobol[4]=1E-2
+}
+
 Parameters<-colnames(Th1)[-1]
-soboldata<-cbind(Parameters,tTh1)
-soboldata<-as.data.frame(soboldata)
-soboldata$tTh1<-as.numeric(soboldata$tTh1)
-plot2<-ggplot(data = soboldata)+geom_col(aes(x=Parameters,y=tTh1,fill=Parameters),size=2)+
-  #to add all of the other parameters for this state, feel free to use the r colour sheet for specific colours
-  ylab(expression("Sobol Indices "))+xlab("Parameters")+
-  theme_pubr()+ggtitle("Total Order Sobol Indices")+
+soboldata <- data.frame(Parameters, tTh1, F_Sobol)
+
+# Rename the Type labels
+colnames(soboldata)[2] <- "Total Order Sobol Indices"
+colnames(soboldata)[3] <- "First Order Sobol Indices"
+
+# Melt data for ggplot
+soboldata_long <- melt(soboldata, id.vars = "Parameters", variable.name = "Type", value.name = "Value")
+
+# Plotting
+plot2 <- ggplot(data = soboldata_long, aes(x = Parameters, y = Value, fill = Type)) +
+  geom_col(position = position_dodge(width = 0.9), size = 1) +
+  ylab(expression("Sobol Indices")) +
+  xlab("Parameters") +
+  theme_pubr() +
+  ggtitle("Sobol Indices") +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Sensitivity Chapter8 Bars.png",dpi=600,path="C:/Users/u1857308/OneDrive - University of Warwick/PhD/Sensitivity Analysis/Linda R/")
+ggsave("Sensitivity Bars.png",dpi=600)
 
